@@ -1,4 +1,4 @@
-import { LightningElement } from 'lwc';
+import { LightningElement, api } from 'lwc';
 import getDashboardData from '@salesforce/apex/OppYearCompareDashboardController.getDashboardData';
 
 const CLOSED_WON_COLUMNS = [
@@ -19,10 +19,15 @@ const CLOSED_WON_COLUMNS = [
 ];
 
 export default class OpportunityYearComparisonDashboard extends LightningElement {
-    compareThroughDate = new Date().toISOString().slice(0, 10);
+    @api embedded = false;
+    @api compareYearA;
+    @api compareYearB;
+    @api compareThroughDate = new Date().toISOString().slice(0, 10);
+    @api appliedOwnerIds;
+    @api appliedProductIds;
     dashboard;
-    year2025;
-    year2026;
+    yearA;
+    yearB;
     stageRows = [];
     productRows = [];
     closedWonRows = [];
@@ -39,14 +44,25 @@ export default class OpportunityYearComparisonDashboard extends LightningElement
         this.loadDashboard(true);
     }
 
+    @api
+    async refresh() {
+        await this.loadDashboard(false);
+    }
+
     async loadDashboard(resetFilters) {
         this.isLoading = true;
         this.errorMessage = undefined;
         try {
             const result = await getDashboardData({
+                yearA: Number(this.compareYearA) || 2025,
+                yearB: Number(this.compareYearB) || 2026,
                 compareThroughDate: this.compareThroughDate,
-                selectedOwnerIds: resetFilters ? null : this.selectedOwnerIds,
-                selectedProductIds: resetFilters ? null : this.selectedProductIds
+                selectedOwnerIds: this.embedded
+                    ? this.appliedOwnerIds
+                    : (resetFilters ? null : this.selectedOwnerIds),
+                selectedProductIds: this.embedded
+                    ? this.appliedProductIds
+                    : (resetFilters ? null : this.selectedProductIds)
             });
             this.prepareDashboard(result, resetFilters);
         } catch (error) {
@@ -58,8 +74,8 @@ export default class OpportunityYearComparisonDashboard extends LightningElement
 
     prepareDashboard(result, resetFilters) {
         this.dashboard = result;
-        this.year2025 = this.decorateYear(result.years[0]);
-        this.year2026 = this.decorateYear(result.years[1]);
+        this.yearA = this.decorateYear(result.years[0]);
+        this.yearB = this.decorateYear(result.years[1]);
         this.stageRows = result.stages.map((row) => ({
             ...row,
             rate2025Label: `${row.rate2025}%`,
@@ -122,11 +138,24 @@ export default class OpportunityYearComparisonDashboard extends LightningElement
         return this.filtersCollapsed ? 'utility:chevronright' : 'utility:chevronleft';
     }
 
+    get dashboardTitle() {
+        return `${this.compareYearA || 2025} vs ${this.compareYearB || 2026} Performance`;
+    }
+
+    get showStandaloneControls() {
+        return !this.embedded;
+    }
+
+    get shellClass() {
+        return this.embedded ? 'dashboard-shell embedded' : 'dashboard-shell';
+    }
+
     get filterToggleTitle() {
         return this.filtersCollapsed ? 'Show filters' : 'Hide filters';
     }
 
     get layoutClass() {
+        if (this.embedded) return 'dashboard-layout embedded-layout';
         return this.filtersCollapsed ? 'dashboard-layout filters-hidden' : 'dashboard-layout';
     }
 

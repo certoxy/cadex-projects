@@ -3,7 +3,7 @@
     <apiVersion>65.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Opportunity Year Comparison Dashboard</masterLabel>
-    <description>Compares matched-YTD Opportunity performance for 2025 and 2026.</description>
+    <description>Compares matched-YTD Opportunity performance for two selected created years.</description>
     <targets>
         <target>lightning__AppPage</target>
         <target>lightning__HomePage</target>

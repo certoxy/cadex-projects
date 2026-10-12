@@ -1,23 +1,22 @@
 # Opportunity Analytics Dashboards
 
-This Salesforce DX package now includes **Opportunity Year Comparison Dashboard**, a single Lightning Web Component that compares the 2025 and 2026 Opportunity cohorts through the same month and day.
+This Salesforce DX package adds seven year-comparison widgets inside the existing **Opportunity Conversion Explorer**. The Explorer defaults Year A and Year B from its selected date range; both years remain selectable, and comparisons use matching year-to-date periods through the selected end date.
 
-## 2025 vs 2026 dashboard
+## Year comparison widgets
 
-Add **Opportunity Year Comparison Dashboard** once in Lightning App Builder. It includes:
+The embedded comparison dashboard includes:
 
+- Conversion rate by stage for each selected created-Opportunity cohort
 - Opportunities created in each matched-YTD period
 - Closed-decision win rate: `Closed Won ÷ (Closed Won + Closed Lost)`
-- Conversion/reach rate for every stage from Engagement through Closed Lost
 - Product breakdown for all created Opportunities, including **No Product**
-- Average standard `Opportunity.Amount` for final-stage Opportunities, by product
-- Dedicated 2025 vs 2026 average-time-to-close comparison by product line, measured from Opportunity creation to its first Won/Lost history entry
-- A collapsed Closed Won Opportunity detail table
-- Sales Team, Owner, and Product checkbox filters
+- Average standard `Opportunity.Amount` for final-stage Opportunities by product line
+- Closed Won Opportunity details for both selected years
+- Average time to close by product line, measured from Opportunity creation to its first Won/Lost history entry
 
 Final stage means **Closed Won or Closed Lost**. If no close-stage history exists, the average-time calculation falls back to `Opportunity.CloseDate`. Opportunities with Engagement followed by Closed Lost on the same calendar day are excluded. Results are capped at 5,000 Opportunities, and the component displays a warning when the cap is reached.
 
-Sales Team checkboxes cascade to their Owners. An Owner can then be manually re-selected as an override. Product selection is independent, and Opportunities without products are always included.
+The comparison widgets use the Explorer's applied Owner and Product filters. Product selection is independent, and Opportunities without products are always included.
 
 ## Existing conversion explorer
 
@@ -47,7 +46,7 @@ The converted-Opportunity tables are collapsed by default. Each reporting period
 
 The explorer includes independent **Won**, **Lost**, and **Open** outcome filters. Won and Lost are selected by default so the chart initially shows closed decisions; Open is optional, and users can select any combination of the three filters.
 
-The Explorer also includes an **Average Time to Close** widget broken down by standard Opportunity Product name. Users select **Year A** and **Year B** for the comparison; the defaults follow the selected date range. It measures Opportunity `CreatedDate` through the first Closed Won or Closed Lost history entry, follows the current date, stage, Owner, Product, and outcome filters, and includes productless Opportunities under **No Product**.
+The Explorer includes **Year A** and **Year B** controls followed by the seven comparison widgets listed above. The defaults follow the selected date range. Comparison close-time uses final-stage Opportunities in those created-year cohorts and includes productless Opportunities under **No Product**.
 
 The explorer has a persistent, hideable left sidebar with three independently collapsible checkbox groups:
 
@@ -93,8 +92,7 @@ sf project deploy validate --manifest manifest/explorer-package.xml --target-org
    ```
 
 4. In Salesforce, open **Setup → Lightning App Builder**.
-5. Edit or create a Home, App, or Record page.
-6. Drag **Opportunity Year Comparison Dashboard** onto the page, save, and activate it. The existing **Opportunity Conversion Explorer** remains available separately.
+5. Edit the page containing **Opportunity Conversion Explorer**, save, and activate it. The seven comparison widgets appear within the Explorer after its conversion results load.
 
 ## Access requirements
 

@@ -122,12 +122,45 @@ private class OppYearCompareDashboardTest {
         Test.startTest();
         OppYearCompareDashboardController.DashboardDTO result =
             OppYearCompareDashboardController.getDashboardData(
-                Date.newInstance(2026, 2, 28), null, null
+                2025,
+                2026,
+                Date.newInstance(2026, 2, 28),
+                null,
+                null
             );
         Test.stopTest();
         System.assertNotEquals(null, result);
         System.assertEquals(2, result.years.size());
         System.assertEquals(9, result.stages.size());
+    }
+
+    @IsTest
+    static void supportsYearsSelectedByExplorer() {
+        User owner = [SELECT Id, Name, Sales_Team__c FROM User WHERE Id = :OWNER_ID];
+        List<Opportunity> opportunities = new List<Opportunity>{
+            opportunity('006000000000021', 'Year A Won', 'Closed Won', '2024-02-01T00:00:00.000Z', '2024-03-01', 500, owner),
+            opportunity('006000000000022', 'Year B Lost', 'Closed Lost', '2025-02-01T00:00:00.000Z', '2025-03-01', 700, owner)
+        };
+
+        OppYearCompareDashboardController.DashboardDTO result =
+            OppYearCompareDashboardController.buildDashboardForYears(
+                opportunities,
+                new List<OppYearCompareDashboardController.StageEvent>(),
+                new Map<Id, List<OppYearCompareDashboardController.ProductLink>>(),
+                Date.newInstance(2025, 6, 30),
+                2024,
+                2025,
+                null,
+                null,
+                false
+            );
+
+        System.assertEquals(2024, result.years[0].year);
+        System.assertEquals(2025, result.years[1].year);
+        System.assertEquals(1, result.years[0].wonCount);
+        System.assertEquals(1, result.years[1].lostCount);
+        System.assertEquals(100, result.years[0].winRate);
+        System.assertEquals(0, result.years[1].winRate);
     }
 
     private static Opportunity opportunity(

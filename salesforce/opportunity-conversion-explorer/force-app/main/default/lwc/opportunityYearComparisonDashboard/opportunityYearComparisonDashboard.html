@@ -1,16 +1,18 @@
 <template>
-    <section class="dashboard-shell">
+    <section class={shellClass}>
         <header class="dashboard-header">
             <div>
                 <p class="eyebrow">OPPORTUNITY ANALYTICS</p>
-                <h1>2025 vs 2026 Performance</h1>
+                <h1>{dashboardTitle}</h1>
                 <p class="subtitle">Matched YTD conversion, value, products, and close speed</p>
             </div>
-            <div class="date-controls">
-                <lightning-input type="date" label="Compare through" value={compareThroughDate}
-                    onchange={handleDateChange}></lightning-input>
-                <lightning-button variant="brand" label="Apply" onclick={handleApplyDate}></lightning-button>
-            </div>
+            <template lwc:if={showStandaloneControls}>
+                <div class="date-controls">
+                    <lightning-input type="date" label="Compare through" value={compareThroughDate}
+                        onchange={handleDateChange}></lightning-input>
+                    <lightning-button variant="brand" label="Apply" onclick={handleApplyDate}></lightning-button>
+                </div>
+            </template>
         </header>
 
         <template if:true={errorMessage}>
@@ -18,6 +20,7 @@
         </template>
 
         <div class={layoutClass}>
+            <template lwc:if={showStandaloneControls}>
             <aside class="filter-panel">
                 <div class="filter-heading">
                     <div><p class="eyebrow">FILTERS</p><h2>Refine results</h2></div>
@@ -59,10 +62,11 @@
                     icon-name="utility:filterList" onclick={handleApplyFilters}></lightning-button>
             </aside>
 
-            <template if:true={filtersCollapsed}>
+            <template lwc:if={filtersCollapsed}>
                 <button class="show-filters" onclick={toggleFilters} title={filterToggleTitle}>
                     <lightning-icon icon-name={filterToggleIcon} size="x-small"></lightning-icon><span>Filters</span>
                 </button>
+            </template>
             </template>
 
             <main class="dashboard-main">
@@ -77,33 +81,33 @@
 
                     <section class="year-grid">
                         <article class="year-card year-2025">
-                            <div class="year-heading"><div><p class="eyebrow">COHORT</p><h2>2025</h2></div><div class="hero-number"><span>{year2025.winRateLabel}</span><small>WIN RATE</small></div></div>
+                            <div class="year-heading"><div><p class="eyebrow">COHORT</p><h2>{yearA.year}</h2></div><div class="hero-number"><span>{yearA.winRateLabel}</span><small>WIN RATE</small></div></div>
                             <div class="kpi-grid">
-                                <div><span>Created</span><strong>{year2025.createdCount}</strong></div>
-                                <div><span>Closed Won</span><strong>{year2025.wonCount}</strong></div>
-                                <div><span>Closed Lost</span><strong>{year2025.lostCount}</strong></div>
-                                <div><span>Still Open</span><strong>{year2025.openCount}</strong></div>
-                                <div><span>Avg 12mo Deal Value (Amount)</span><strong>{year2025.averageFinalDealValueLabel}</strong></div>
-                                <div><span>Avg Time to Close</span><strong>{year2025.averageDaysToCloseLabel}</strong></div>
+                                <div><span>Created</span><strong>{yearA.createdCount}</strong></div>
+                                <div><span>Closed Won</span><strong>{yearA.wonCount}</strong></div>
+                                <div><span>Closed Lost</span><strong>{yearA.lostCount}</strong></div>
+                                <div><span>Still Open</span><strong>{yearA.openCount}</strong></div>
+                                <div><span>Avg 12mo Deal Value (Amount)</span><strong>{yearA.averageFinalDealValueLabel}</strong></div>
+                                <div><span>Avg Time to Close</span><strong>{yearA.averageDaysToCloseLabel}</strong></div>
                             </div>
-                            <p class="exclusion">{year2025.rapidLossExcluded} same-day Engagement → Lost excluded</p>
+                            <p class="exclusion">{yearA.rapidLossExcluded} same-day Engagement → Lost excluded</p>
                         </article>
                         <article class="year-card year-2026">
-                            <div class="year-heading"><div><p class="eyebrow">COHORT</p><h2>2026</h2></div><div class="hero-number"><span>{year2026.winRateLabel}</span><small>WIN RATE</small></div></div>
+                            <div class="year-heading"><div><p class="eyebrow">COHORT</p><h2>{yearB.year}</h2></div><div class="hero-number"><span>{yearB.winRateLabel}</span><small>WIN RATE</small></div></div>
                             <div class="kpi-grid">
-                                <div><span>Created</span><strong>{year2026.createdCount}</strong></div>
-                                <div><span>Closed Won</span><strong>{year2026.wonCount}</strong></div>
-                                <div><span>Closed Lost</span><strong>{year2026.lostCount}</strong></div>
-                                <div><span>Still Open</span><strong>{year2026.openCount}</strong></div>
-                                <div><span>Avg 12mo Deal Value (Amount)</span><strong>{year2026.averageFinalDealValueLabel}</strong></div>
-                                <div><span>Avg Time to Close</span><strong>{year2026.averageDaysToCloseLabel}</strong></div>
+                                <div><span>Created</span><strong>{yearB.createdCount}</strong></div>
+                                <div><span>Closed Won</span><strong>{yearB.wonCount}</strong></div>
+                                <div><span>Closed Lost</span><strong>{yearB.lostCount}</strong></div>
+                                <div><span>Still Open</span><strong>{yearB.openCount}</strong></div>
+                                <div><span>Avg 12mo Deal Value (Amount)</span><strong>{yearB.averageFinalDealValueLabel}</strong></div>
+                                <div><span>Avg Time to Close</span><strong>{yearB.averageDaysToCloseLabel}</strong></div>
                             </div>
-                            <p class="exclusion">{year2026.rapidLossExcluded} same-day Engagement → Lost excluded</p>
+                            <p class="exclusion">{yearB.rapidLossExcluded} same-day Engagement → Lost excluded</p>
                         </article>
                     </section>
 
                     <section class="content-card stage-card">
-                        <div class="section-heading"><div><p class="eyebrow">CONVERSION BY STAGE</p><h2>How far each created cohort progressed</h2></div><div class="legend"><span class="dot navy"></span>2025 <span class="dot teal"></span>2026</div></div>
+                        <div class="section-heading"><div><p class="eyebrow">CONVERSION BY STAGE</p><h2>How far each created cohort progressed</h2></div><div class="legend"><span class="dot navy"></span>{yearA.year} <span class="dot teal"></span>{yearB.year}</div></div>
                         <div class="stage-table">
                             <template for:each={stageRows} for:item="row">
                                 <div class="stage-row" key={row.stageName}>
@@ -118,7 +122,7 @@
                     <section class="content-card product-card">
                         <div class="section-heading"><div><p class="eyebrow">PRODUCT BREAKDOWN</p><h2>Created Opportunities and final-stage performance</h2></div></div>
                         <template if:true={hasProducts}>
-                            <div class="table-scroll"><table><thead><tr><th rowspan="2">Product</th><th colspan="2">Created</th><th colspan="2">Avg 12mo Deal Value (Amount)</th><th colspan="2">Avg Time to Close</th></tr><tr><th>2025</th><th>2026</th><th>2025</th><th>2026</th><th>2025</th><th>2026</th></tr></thead>
+                            <div class="table-scroll"><table><thead><tr><th rowspan="2">Product</th><th colspan="2">Created</th><th colspan="2">Avg 12mo Deal Value (Amount)</th><th colspan="2">Avg Time to Close</th></tr><tr><th>{yearA.year}</th><th>{yearB.year}</th><th>{yearA.year}</th><th>{yearB.year}</th><th>{yearA.year}</th><th>{yearB.year}</th></tr></thead>
                             <tbody><template for:each={productRows} for:item="row"><tr key={row.productName}><th>{row.productName}</th><td>{row.created2025}</td><td>{row.created2026}</td><td>{row.averageDealValue2025Label}</td><td>{row.averageDealValue2026Label}</td><td>{row.averageCloseDays2025Label}</td><td>{row.averageCloseDays2026Label}</td></tr></template></tbody></table></div>
                         </template>
                     </section>
@@ -130,17 +134,17 @@
                                 <h2>Average Time to Close</h2>
                                 <p class="section-note">Created Date to the first Closed Won or Closed Lost date. Products without a closed decision show —.</p>
                             </div>
-                            <div class="legend"><span class="dot navy"></span>2025 <span class="dot teal"></span>2026</div>
+                            <div class="legend"><span class="dot navy"></span>{yearA.year} <span class="dot teal"></span>{yearB.year}</div>
                         </div>
                         <template if:true={hasProducts}>
                             <div class="close-time-list">
                                 <template for:each={productRows} for:item="row">
                                     <div class="close-time-row" key={row.productName}>
                                         <strong>{row.productName}</strong>
-                                        <span class="year-tag">2025</span>
+                                        <span class="year-tag">{yearA.year}</span>
                                         <div class="bar-track close-track"><span class="bar navy-bar" style={row.closeDays2025Style}></span></div>
                                         <span class="days-value">{row.averageCloseDays2025Label}</span>
-                                        <span class="year-tag">2026</span>
+                                        <span class="year-tag">{yearB.year}</span>
                                         <div class="bar-track close-track"><span class="bar teal-bar" style={row.closeDays2026Style}></span></div>
                                         <span class="days-value">{row.averageCloseDays2026Label}</span>
                                     </div>

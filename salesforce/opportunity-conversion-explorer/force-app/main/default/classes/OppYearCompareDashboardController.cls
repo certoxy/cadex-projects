@@ -126,13 +126,26 @@ public with sharing class OppYearCompareDashboardController {
 
     @AuraEnabled(cacheable=true)
     public static DashboardDTO getDashboardData(
+        Integer yearA,
+        Integer yearB,
         Date compareThroughDate,
         List<Id> selectedOwnerIds,
         List<Id> selectedProductIds
     ) {
+        yearA = yearA == null ? FIRST_YEAR : yearA;
+        yearB = yearB == null ? SECOND_YEAR : yearB;
+        if (yearA == yearB || yearA < 2000 || yearB < 2000 || yearA > 2100 || yearB > 2100) {
+            throw new AuraHandledException('Choose two different comparison years between 2000 and 2100.');
+        }
         Date effectiveDate = compareThroughDate == null ? Date.today() : compareThroughDate;
-        Date queryStart = Date.newInstance(FIRST_YEAR, 1, 1);
-        Date queryEnd = Date.newInstance(SECOND_YEAR + 1, 1, 1);
+        Date queryStartA = Date.newInstance(yearA, 1, 1);
+        Date queryEndA = Date.newInstance(yearA + 1, 1, 1);
+        Date queryStartB = Date.newInstance(yearB, 1, 1);
+        Date queryEndB = Date.newInstance(yearB + 1, 1, 1);
+        Datetime queryStartADatetime = startOfDay(queryStartA);
+        Datetime queryEndADatetime = startOfDay(queryEndA);
+        Datetime queryStartBDatetime = startOfDay(queryStartB);
+        Datetime queryEndBDatetime = startOfDay(queryEndB);
 
         List<Opportunity> opportunities;
         try {
@@ -140,8 +153,10 @@ public with sharing class OppYearCompareDashboardController {
                 SELECT Id, Name, OwnerId, Owner.Name, Owner.Sales_Team__c,
                     Amount, StageName, CreatedDate, CloseDate
                 FROM Opportunity
-                WHERE CreatedDate >= :startOfDay(queryStart)
-                    AND CreatedDate < :startOfDay(queryEnd)
+                WHERE (
+                    (CreatedDate >= :queryStartADatetime AND CreatedDate < :queryEndADatetime)
+                    OR (CreatedDate >= :queryStartBDatetime AND CreatedDate < :queryEndBDatetime)
+                )
                 WITH SECURITY_ENFORCED
                 ORDER BY CreatedDate, Id
                 LIMIT :MAX_OPPORTUNITIES
@@ -192,11 +207,13 @@ public with sharing class OppYearCompareDashboardController {
             }
         }
 
-        return buildDashboard(
+        return buildDashboardForYears(
             opportunities,
             stageEvents,
             productsByOpportunity,
             effectiveDate,
+            yearA,
+            yearB,
             selectedOwnerIds == null ? null : new Set<Id>(selectedOwnerIds),
             selectedProductIds == null ? null : new Set<Id>(selectedProductIds),
             opportunities.size() == MAX_OPPORTUNITIES
@@ -213,12 +230,37 @@ public with sharing class OppYearCompareDashboardController {
         Set<Id> selectedProductIds,
         Boolean isTruncated
     ) {
+        return buildDashboardForYears(
+            opportunities,
+            stageEvents,
+            productsByOpportunity,
+            compareThroughDate,
+            FIRST_YEAR,
+            SECOND_YEAR,
+            selectedOwnerIds,
+            selectedProductIds,
+            isTruncated
+        );
+    }
+
+    @TestVisible
+    private static DashboardDTO buildDashboardForYears(
+        List<Opportunity> opportunities,
+        List<StageEvent> stageEvents,
+        Map<Id, List<ProductLink>> productsByOpportunity,
+        Date compareThroughDate,
+        Integer yearA,
+        Integer yearB,
+        Set<Id> selectedOwnerIds,
+        Set<Id> selectedProductIds,
+        Boolean isTruncated
+    ) {
         Map<Id, List<StageEvent>> eventsByOpportunity = groupEvents(stageEvents);
-        Date end2025 = matchingEndDate(FIRST_YEAR, compareThroughDate);
-        Date end2026 = matchingEndDate(SECOND_YEAR, compareThroughDate);
+        Date endA = matchingEndDate(yearA, compareThroughDate);
+        Date endB = matchingEndDate(yearB, compareThroughDate);
         Map<Integer, YearSummaryDTO> yearByNumber = new Map<Integer, YearSummaryDTO>{
-            FIRST_YEAR => newYearSummary(FIRST_YEAR, end2025),
-            SECOND_YEAR => newYearSummary(SECOND_YEAR, end2026)
+            yearA => newYearSummary(yearA, endA),
+            yearB => newYearSummary(yearB, endB)
         };
         Map<String, StageComparisonDTO> stageByName = new Map<String, StageComparisonDTO>();
         Map<String, ProductAccumulator> productByName = new Map<String, ProductAccumulator>();
@@ -227,10 +269,10 @@ public with sharing class OppYearCompareDashboardController {
         Map<Id, FilterOptionDTO> ownerOptions = new Map<Id, FilterOptionDTO>();
         Map<Id, FilterOptionDTO> productOptions = new Map<Id, FilterOptionDTO>();
         Integer noProductCount = 0;
-        Map<Integer, Decimal> finalDealValueSum = new Map<Integer, Decimal>{ FIRST_YEAR => 0, SECOND_YEAR => 0 };
-        Map<Integer, Integer> finalDealValueCount = new Map<Integer, Integer>{ FIRST_YEAR => 0, SECOND_YEAR => 0 };
-        Map<Integer, Decimal> closeDaysSum = new Map<Integer, Decimal>{ FIRST_YEAR => 0, SECOND_YEAR => 0 };
-        Map<Integer, Integer> closeDaysCount = new Map<Integer, Integer>{ FIRST_YEAR => 0, SECOND_YEAR => 0 };
+        Map<Integer, Decimal> finalDealValueSum = new Map<Integer, Decimal>{ yearA => 0, yearB => 0 };
+        Map<Integer, Integer> finalDealValueCount = new Map<Integer, Integer>{ yearA => 0, yearB => 0 };
+        Map<Integer, Decimal> closeDaysSum = new Map<Integer, Decimal>{ yearA => 0, yearB => 0 };
+        Map<Integer, Integer> closeDaysCount = new Map<Integer, Integer>{ yearA => 0, yearB => 0 };
 
         for (String stageName : STAGES) {
             StageComparisonDTO item = new StageComparisonDTO();
@@ -243,7 +285,7 @@ public with sharing class OppYearCompareDashboardController {
             if (!yearByNumber.containsKey(year)) {
                 continue;
             }
-            Date periodEnd = year == FIRST_YEAR ? end2025 : end2026;
+            Date periodEnd = year == yearA ? endA : endB;
             if (opportunity.CreatedDate.date() > periodEnd) {
                 continue;
             }
@@ -289,7 +331,7 @@ public with sharing class OppYearCompareDashboardController {
                 if (stageItem == null) {
                     continue;
                 }
-                if (year == FIRST_YEAR) {
+                if (year == yearA) {
                     stageItem.count2025++;
                 } else {
                     stageItem.count2026++;
@@ -323,7 +365,8 @@ public with sharing class OppYearCompareDashboardController {
                     year,
                     isFinal,
                     twelveMonthValue,
-                    daysToClose
+                    daysToClose,
+                    yearA
                 );
             }
 
@@ -354,8 +397,8 @@ public with sharing class OppYearCompareDashboardController {
             summary.averageDaysToClose = average(closeDaysSum.get(year), closeDaysCount.get(year));
         }
         for (StageComparisonDTO stageItem : stageByName.values()) {
-            stageItem.rate2025 = percent(stageItem.count2025, yearByNumber.get(FIRST_YEAR).createdCount);
-            stageItem.rate2026 = percent(stageItem.count2026, yearByNumber.get(SECOND_YEAR).createdCount);
+            stageItem.rate2025 = percent(stageItem.count2025, yearByNumber.get(yearA).createdCount);
+            stageItem.rate2026 = percent(stageItem.count2026, yearByNumber.get(yearB).createdCount);
         }
 
         DashboardDTO result = new DashboardDTO();
@@ -363,7 +406,7 @@ public with sharing class OppYearCompareDashboardController {
         result.comparisonLabel = 'Jan 1–' + monthDayLabel(compareThroughDate) + ' matched YTD';
         result.isTruncated = isTruncated;
         result.years = new List<YearSummaryDTO>{
-            yearByNumber.get(FIRST_YEAR), yearByNumber.get(SECOND_YEAR)
+            yearByNumber.get(yearA), yearByNumber.get(yearB)
         };
         result.stages = orderedStages(stageByName);
         result.products = buildProductComparisons(productByName);
@@ -501,9 +544,10 @@ public with sharing class OppYearCompareDashboardController {
         Integer year,
         Boolean isFinal,
         Decimal dealValue,
-        Integer daysToClose
+        Integer daysToClose,
+        Integer yearA
     ) {
-        if (year == FIRST_YEAR) {
+        if (year == yearA) {
             metric.created2025++;
             if (isFinal && dealValue != null) {
                 metric.dealValueSum2025 += dealValue;

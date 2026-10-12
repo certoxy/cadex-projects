@@ -233,13 +233,10 @@
                             </aside>
                         </div>
 
-                        <section class="close-time-panel" aria-labelledby="product-close-time-title">
+                        <section class="close-time-panel year-comparison-controls" aria-label="Year comparison controls">
                             <div class="section-heading close-time-heading">
-                                <div>
-                                    <p class="eyebrow">Close speed by product line</p>
-                                    <h3 id="product-close-time-title">{comparisonTitle}</h3>
-                                    <p>Created Date to first Closed Won or Closed Lost date. The selected date range must include the years being compared.</p>
-                                </div>
+                                <div><p class="eyebrow">YEAR COMPARISON</p><h3>Compare created Opportunity cohorts</h3>
+                                    <p>The comparison uses matching year-to-date periods through the selected end date.</p></div>
                                 <div class="comparison-controls">
                                     <lightning-combobox name="comparisonYearA" label="Year A" value={comparisonYearA}
                                         options={comparisonYearAOptions} onchange={handleComparisonYearChange}>
@@ -249,26 +246,16 @@
                                     </lightning-combobox>
                                 </div>
                             </div>
-
-                            <template lwc:if={hasProductCloseData}>
-                                <div class="close-time-list">
-                                    <template for:each={productCloseRows} for:item="row">
-                                        <div class="close-time-row" key={row.productName}>
-                                            <strong>{row.productName}</strong>
-                                            <span class="close-year">{comparisonYearA}</span>
-                                            <div class="close-track"><span class="close-bar year-a" style={row.barAStyle}></span></div>
-                                            <span class="close-value">{row.averageALabel}</span>
-                                            <span class="close-year">{comparisonYearB}</span>
-                                            <div class="close-track"><span class="close-bar year-b" style={row.barBStyle}></span></div>
-                                            <span class="close-value">{row.averageBLabel}</span>
-                                        </div>
-                                    </template>
-                                </div>
-                            </template>
-                            <template lwc:else>
-                                <div class="close-time-empty">{comparisonEmptyMessage}</div>
-                            </template>
                         </section>
+
+                        <c-opportunity-year-comparison-dashboard
+                            embedded
+                            compare-year-a={comparisonYearA}
+                            compare-year-b={comparisonYearB}
+                            compare-through-date={endDate}
+                            applied-owner-ids={selectedOwnerIds}
+                            applied-product-ids={selectedProductIds}>
+                        </c-opportunity-year-comparison-dashboard>
 
                         <section class={detailsSectionClass} aria-labelledby="opportunity-details-title">
                             <div class="table-heading">

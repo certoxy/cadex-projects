@@ -372,6 +372,7 @@ export default class OpportunityConversionExplorer extends LightningElement {
 
     handleComparisonYearChange(event) {
         this[event.target.name] = event.detail.value;
+        this.refreshYearComparison();
     }
 
     syncComparisonYearsFromDates() {
@@ -479,7 +480,7 @@ export default class OpportunityConversionExplorer extends LightningElement {
         this.isExpanded = !this.isExpanded;
     }
 
-    handleApply() {
+    async handleApply() {
         const inputs = [...this.template.querySelectorAll('lightning-input, lightning-combobox')];
         const allValid = inputs.reduce((valid, input) => {
             input.reportValidity();
@@ -487,7 +488,7 @@ export default class OpportunityConversionExplorer extends LightningElement {
         }, true);
 
         if (allValid) {
-            this.loadConversionData(this.dimensionFiltersNeedReset);
+            await this.loadConversionData(this.dimensionFiltersNeedReset);
         }
     }
 
@@ -535,6 +536,15 @@ export default class OpportunityConversionExplorer extends LightningElement {
             this.errorMessage = this.reduceError(error);
         } finally {
             this.isLoading = false;
+        }
+        await this.refreshYearComparison();
+    }
+
+    async refreshYearComparison() {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const comparisonDashboard = this.template.querySelector('c-opportunity-year-comparison-dashboard');
+        if (comparisonDashboard) {
+            await comparisonDashboard.refresh();
         }
     }
 
