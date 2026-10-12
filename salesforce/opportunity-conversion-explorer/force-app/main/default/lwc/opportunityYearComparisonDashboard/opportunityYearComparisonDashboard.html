@@ -79,35 +79,8 @@
                         <div class="warning-panel">Showing the first 5,000 Opportunities. Narrow the filters for a complete result.</div>
                     </template>
 
-                    <section class="year-grid">
-                        <article class="year-card year-2025">
-                            <div class="year-heading"><div><p class="eyebrow">COHORT</p><h2>{yearA.year}</h2></div><div class="hero-number"><span>{yearA.winRateLabel}</span><small>WIN RATE</small></div></div>
-                            <div class="kpi-grid">
-                                <div><span>Created</span><strong>{yearA.createdCount}</strong></div>
-                                <div><span>Closed Won</span><strong>{yearA.wonCount}</strong></div>
-                                <div><span>Closed Lost</span><strong>{yearA.lostCount}</strong></div>
-                                <div><span>Still Open</span><strong>{yearA.openCount}</strong></div>
-                                <div><span>Avg 12mo Deal Value (Amount)</span><strong>{yearA.averageFinalDealValueLabel}</strong></div>
-                                <div><span>Avg Time to Close</span><strong>{yearA.averageDaysToCloseLabel}</strong></div>
-                            </div>
-                            <p class="exclusion">{yearA.rapidLossExcluded} same-day Engagement → Lost excluded</p>
-                        </article>
-                        <article class="year-card year-2026">
-                            <div class="year-heading"><div><p class="eyebrow">COHORT</p><h2>{yearB.year}</h2></div><div class="hero-number"><span>{yearB.winRateLabel}</span><small>WIN RATE</small></div></div>
-                            <div class="kpi-grid">
-                                <div><span>Created</span><strong>{yearB.createdCount}</strong></div>
-                                <div><span>Closed Won</span><strong>{yearB.wonCount}</strong></div>
-                                <div><span>Closed Lost</span><strong>{yearB.lostCount}</strong></div>
-                                <div><span>Still Open</span><strong>{yearB.openCount}</strong></div>
-                                <div><span>Avg 12mo Deal Value (Amount)</span><strong>{yearB.averageFinalDealValueLabel}</strong></div>
-                                <div><span>Avg Time to Close</span><strong>{yearB.averageDaysToCloseLabel}</strong></div>
-                            </div>
-                            <p class="exclusion">{yearB.rapidLossExcluded} same-day Engagement → Lost excluded</p>
-                        </article>
-                    </section>
-
                     <section class="content-card stage-card">
-                        <div class="section-heading"><div><p class="eyebrow">CONVERSION BY STAGE</p><h2>How far each created cohort progressed</h2></div><div class="legend"><span class="dot navy"></span>{yearA.year} <span class="dot teal"></span>{yearB.year}</div></div>
+                        <div class="section-heading"><div><p class="eyebrow">WIDGET 1 · CONVERSION RATE BY STAGE</p><h2>How far each created cohort progressed</h2></div><div class="legend"><span class="dot navy"></span>{yearA.year} <span class="dot teal"></span>{yearB.year}</div></div>
                         <div class="stage-table">
                             <template for:each={stageRows} for:item="row">
                                 <div class="stage-row" key={row.stageName}>
@@ -119,19 +92,56 @@
                         </div>
                     </section>
 
+                    <div class="cohort-widget-grid">
+                        <section class="content-card cohort-widget">
+                            <div><p class="eyebrow">WIDGET 2 · OPPORTUNITIES CREATED</p><h2>Created by cohort</h2></div>
+                            <div class="cohort-values">
+                                <div><span>{yearA.year}</span><strong>{yearA.createdCount}</strong></div>
+                                <div><span>{yearB.year}</span><strong>{yearB.createdCount}</strong></div>
+                            </div>
+                        </section>
+                        <section class="content-card cohort-widget">
+                            <div><p class="eyebrow">WIDGET 3 · WIN RATE</p><h2>Closed decision win rate</h2></div>
+                            <div class="cohort-values">
+                                <div><span>{yearA.year}</span><strong>{yearA.winRateLabel}</strong></div>
+                                <div><span>{yearB.year}</span><strong>{yearB.winRateLabel}</strong></div>
+                            </div>
+                            <p class="section-note">Closed Won ÷ (Closed Won + Closed Lost)</p>
+                        </section>
+                    </div>
+
                     <section class="content-card product-card">
-                        <div class="section-heading"><div><p class="eyebrow">PRODUCT BREAKDOWN</p><h2>Created Opportunities and final-stage performance</h2></div></div>
+                        <div class="section-heading"><div><p class="eyebrow">WIDGET 4 · PRODUCT BREAKDOWN</p><h2>Created Opportunities by product line</h2></div></div>
                         <template if:true={hasProducts}>
-                            <div class="table-scroll"><table><thead><tr><th rowspan="2">Product</th><th colspan="2">Created</th><th colspan="2">Avg 12mo Deal Value (Amount)</th><th colspan="2">Avg Time to Close</th></tr><tr><th>{yearA.year}</th><th>{yearB.year}</th><th>{yearA.year}</th><th>{yearB.year}</th><th>{yearA.year}</th><th>{yearB.year}</th></tr></thead>
-                            <tbody><template for:each={productRows} for:item="row"><tr key={row.productName}><th>{row.productName}</th><td>{row.created2025}</td><td>{row.created2026}</td><td>{row.averageDealValue2025Label}</td><td>{row.averageDealValue2026Label}</td><td>{row.averageCloseDays2025Label}</td><td>{row.averageCloseDays2026Label}</td></tr></template></tbody></table></div>
+                            <div class="table-scroll"><table><thead><tr><th>Product line</th><th>{yearA.year} created</th><th>{yearB.year} created</th></tr></thead>
+                            <tbody><template for:each={productRows} for:item="row"><tr key={row.productName}><th>{row.productName}</th><td>{row.created2025}</td><td>{row.created2026}</td></tr></template></tbody></table></div>
+                        </template>
+                    </section>
+
+                    <section class="content-card product-card">
+                        <div class="section-heading"><div><p class="eyebrow">WIDGET 5 · 12MO AVERAGE DEAL VALUE</p><h2>Final-stage Opportunities by product line</h2><p class="section-note">Based on standard Opportunity Amount for Closed Won and Closed Lost deals.</p></div></div>
+                        <template if:true={hasProducts}>
+                            <div class="table-scroll"><table><thead><tr><th>Product line</th><th>{yearA.year} average</th><th>{yearB.year} average</th></tr></thead>
+                            <tbody><template for:each={productRows} for:item="row"><tr key={row.productName}><th>{row.productName}</th><td>{row.averageDealValue2025Label}</td><td>{row.averageDealValue2026Label}</td></tr></template></tbody></table></div>
+                        </template>
+                    </section>
+
+                    <section class="content-card detail-card">
+                        <button class="detail-toggle" onclick={toggleDetails}>
+                            <span><span class="eyebrow">WIDGET 6 · CLOSED WON DETAILS</span><strong>Won Opportunities in selected cohorts</strong></span>
+                            <span>{detailsLabel}<lightning-icon icon-name={detailsIcon} size="x-small"></lightning-icon></span>
+                        </button>
+                        <template if:true={detailsExpanded}>
+                            <lightning-datatable key-field="opportunityId" data={closedWonRows}
+                                columns={closedWonColumns} hide-checkbox-column></lightning-datatable>
                         </template>
                     </section>
 
                     <section class="content-card close-time-card">
                         <div class="section-heading">
                             <div>
-                                <p class="eyebrow">CLOSE SPEED BY PRODUCT LINE</p>
-                                <h2>Average Time to Close</h2>
+                                <p class="eyebrow">WIDGET 7 · AVERAGE TIME TO CLOSE</p>
+                                <h2>By product line · created-year cohorts</h2>
                                 <p class="section-note">Created Date to the first Closed Won or Closed Lost date. Products without a closed decision show —.</p>
                             </div>
                             <div class="legend"><span class="dot navy"></span>{yearA.year} <span class="dot teal"></span>{yearB.year}</div>
@@ -153,16 +163,6 @@
                         </template>
                     </section>
 
-                    <section class="content-card detail-card">
-                        <button class="detail-toggle" onclick={toggleDetails}>
-                            <span><span class="eyebrow">CLOSED WON DETAILS</span><strong>Opportunity records for both cohorts</strong></span>
-                            <span>{detailsLabel}<lightning-icon icon-name={detailsIcon} size="x-small"></lightning-icon></span>
-                        </button>
-                        <template if:true={detailsExpanded}>
-                            <lightning-datatable key-field="opportunityId" data={closedWonRows}
-                                columns={closedWonColumns} hide-checkbox-column></lightning-datatable>
-                        </template>
-                    </section>
                 </template>
             </main>
         </div>
