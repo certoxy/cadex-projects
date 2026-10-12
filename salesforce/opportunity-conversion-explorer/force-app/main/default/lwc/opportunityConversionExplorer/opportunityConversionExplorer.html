@@ -1,0 +1,304 @@
+<template>
+    <lightning-card>
+        <div slot="title" class="title-wrap">
+            <lightning-icon icon-name="standard:opportunity" size="small"></lightning-icon>
+            <div>
+                <h1>Opportunity Conversion Explorer</h1>
+                <p>Review outcomes after Opportunities enter a selected stage</p>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <section class="filter-panel" aria-label="Conversion report filters">
+                <lightning-input type="date" name="startDate" label="Start Date" value={startDate}
+                    max={endDate} onchange={handleFilterChange} required>
+                </lightning-input>
+                <lightning-input type="date" name="endDate" label="End Date" value={endDate}
+                    min={startDate} onchange={handleFilterChange} required>
+                </lightning-input>
+                <lightning-combobox name="sourceStage" label="From Stage" value={sourceStage}
+                    options={stageOptions} onchange={handleFilterChange} required>
+                </lightning-combobox>
+                <div class="apply-action">
+                    <lightning-button variant="brand" label="Apply Filters" icon-name="utility:filterList"
+                        onclick={handleApply} disabled={isLoading}>
+                    </lightning-button>
+                </div>
+
+                <fieldset class="outcome-filter">
+                    <legend>Include Outcomes</legend>
+                    <div class="outcome-options">
+                        <lightning-input type="checkbox" name="includeWon" label="Won" checked={includeWon}
+                            onchange={handleOutcomeChange}>
+                        </lightning-input>
+                        <lightning-input type="checkbox" name="includeLost" label="Lost" checked={includeLost}
+                            onchange={handleOutcomeChange}>
+                        </lightning-input>
+                        <lightning-input type="checkbox" name="includeOpen" label="Open" checked={includeOpen}
+                            onchange={handleOutcomeChange}>
+                        </lightning-input>
+                    </div>
+                </fieldset>
+            </section>
+
+            <div class="layout-toolbar">
+                <lightning-button variant="base" label={sidebarToggleLabel} icon-name={sidebarToggleIcon}
+                    onclick={handleSidebarToggle}>
+                </lightning-button>
+                <span>{dimensionSelectionSummary}</span>
+            </div>
+
+            <div class={workspaceClass}>
+                <template lwc:if={isSidebarVisible}>
+                    <aside class="filter-sidebar" aria-labelledby="sidebar-title">
+                        <header class="sidebar-header">
+                            <div>
+                                <p class="eyebrow">Refine cohort</p>
+                                <h2 id="sidebar-title">Dashboard Filters</h2>
+                                <p>Selections across groups are combined.</p>
+                            </div>
+                        </header>
+
+                        <section class="filter-group">
+                            <button class="filter-group-toggle" type="button" data-section="salesTeam"
+                                aria-expanded={isSalesTeamExpanded} onclick={handleFilterGroupToggle}>
+                                <span><strong>Sales Team</strong><small>{salesTeamSelectionLabel} selected</small></span>
+                                <lightning-icon icon-name={salesTeamChevron} size="xx-small"></lightning-icon>
+                            </button>
+                            <template lwc:if={isSalesTeamExpanded}>
+                                <div class="filter-group-body">
+                                    <div class="group-tools">
+                                        <button type="button" data-group="salesTeam" onclick={handleSelectAll}>All</button>
+                                        <button type="button" data-group="salesTeam" onclick={handleClearGroup}>None</button>
+                                    </div>
+                                    <div class="choice-list">
+                                        <template for:each={salesTeamOptions} for:item="option">
+                                            <lightning-input key={option.value} type="checkbox" label={option.label}
+                                                checked={option.checked} data-group="salesTeam" data-value={option.value}
+                                                onchange={handleDimensionChange}>
+                                            </lightning-input>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </section>
+
+                        <section class="filter-group">
+                            <button class="filter-group-toggle" type="button" data-section="owner"
+                                aria-expanded={isOwnerExpanded} onclick={handleFilterGroupToggle}>
+                                <span><strong>Opportunity Owner</strong><small>{ownerSelectionLabel} selected</small></span>
+                                <lightning-icon icon-name={ownerChevron} size="xx-small"></lightning-icon>
+                            </button>
+                            <template lwc:if={isOwnerExpanded}>
+                                <div class="filter-group-body">
+                                    <div class="group-tools">
+                                        <button type="button" data-group="owner" onclick={handleSelectAll}>All</button>
+                                        <button type="button" data-group="owner" onclick={handleClearGroup}>None</button>
+                                    </div>
+                                    <div class="choice-list">
+                                        <template for:each={ownerOptions} for:item="option">
+                                            <lightning-input key={option.value} type="checkbox" label={option.label}
+                                                checked={option.checked} data-group="owner" data-value={option.value}
+                                                onchange={handleDimensionChange}>
+                                            </lightning-input>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </section>
+
+                        <section class="filter-group">
+                            <button class="filter-group-toggle" type="button" data-section="products"
+                                aria-expanded={isProductsExpanded} onclick={handleFilterGroupToggle}>
+                                <span><strong>Products</strong><small>{productSelectionLabel} selected</small></span>
+                                <lightning-icon icon-name={productsChevron} size="xx-small"></lightning-icon>
+                            </button>
+                            <template lwc:if={isProductsExpanded}>
+                                <div class="filter-group-body">
+                                    <div class="group-tools">
+                                        <button type="button" data-group="products" onclick={handleSelectAll}>All</button>
+                                        <button type="button" data-group="products" onclick={handleClearGroup}>None</button>
+                                    </div>
+                                    <div class="choice-list">
+                                        <template for:each={productOptions} for:item="product">
+                                            <lightning-input key={product.productId} type="checkbox" label={product.label}
+                                                checked={product.checked} data-value={product.productId}
+                                                onchange={handleProductChange}>
+                                            </lightning-input>
+                                        </template>
+                                        <template lwc:if={hasNoProduct}>
+                                            <div class="always-included">
+                                                <lightning-icon icon-name="utility:check" size="xx-small"></lightning-icon>
+                                                <span>{noProductLabel} · Always included</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </section>
+
+                        <footer class="sidebar-footer">
+                            <p>Opportunities without products are always counted. Product checkboxes filter only Opportunities that have products.</p>
+                            <lightning-button variant="brand" label="Apply Sidebar Filters"
+                                onclick={handleApplySidebarFilters} disabled={disableSidebarApply}>
+                            </lightning-button>
+                        </footer>
+                    </aside>
+                </template>
+
+                <main class="main-content">
+                    <template lwc:if={isLoading}>
+                        <div class="loading-area">
+                            <lightning-spinner alternative-text="Loading conversion report" size="medium"></lightning-spinner>
+                        </div>
+                    </template>
+
+                    <template lwc:if={errorMessage}>
+                        <div class="error" role="alert">
+                            <lightning-icon icon-name="utility:error" size="small" variant="inverse"></lightning-icon>
+                            <span>{errorMessage}</span>
+                        </div>
+                    </template>
+
+                    <template lwc:if={hasResult}>
+                        <div class="result-heading">
+                            <div>
+                                <h2>{result.sourceStage} Outcomes</h2>
+                                <p>Opportunities that entered {result.sourceStage} during the selected period</p>
+                            </div>
+                            <div class="result-context">
+                                <span class="date-range">{result.rangeLabel}</span>
+                                <span class="product-context">{dimensionSelectionSummary}</span>
+                            </div>
+                        </div>
+
+                        <div class="analysis-grid">
+                            <section class="chart-panel" aria-labelledby="outcome-chart-title">
+                                <div class="section-heading">
+                                    <div><p class="eyebrow">Outcome mix</p><h3 id="outcome-chart-title">Opportunity Results</h3></div>
+                                    <p>Click a segment to view its Opportunities</p>
+                                </div>
+
+                                <template lwc:if={hasChartData}>
+                                    <div class="chart-layout">
+                                        <svg class="donut-chart" viewBox="0 0 100 100" role="img" aria-label={chartAriaLabel}>
+                                            <circle class="donut-background" cx="50" cy="50" r="38"></circle>
+                                            <template for:each={chartSegments} for:item="segment">
+                                                <g key={segment.outcome}>
+                                                    <path class="donut-slice" d={segment.path} fill={segment.color}
+                                                        data-outcome={segment.outcome} role="button" tabindex="0"
+                                                        aria-label={segment.ariaLabel} onclick={handleSliceClick}
+                                                        onkeydown={handleSliceKeydown}><title>{segment.ariaLabel}</title></path>
+                                                    <template lwc:if={segment.showLabel}>
+                                                        <text class="donut-percentage" x={segment.labelX} y={segment.labelY}
+                                                            text-anchor="middle" dominant-baseline="middle">{segment.percentageLabel}</text>
+                                                    </template>
+                                                </g>
+                                            </template>
+                                            <text class="donut-number" x="50" y="47" text-anchor="middle">{chartTotal}</text>
+                                            <text class="donut-label" x="50" y="57" text-anchor="middle">{donutCenterLabel}</text>
+                                        </svg>
+
+                                        <div class="chart-legend" aria-label="Opportunity outcome legend">
+                                            <template for:each={selectedOutcomeItems} for:item="item">
+                                                <button key={item.outcome} type="button" class={item.className} style={item.style}
+                                                    data-outcome={item.outcome} onclick={handleSliceClick}>
+                                                    <span class="legend-dot"></span><span class="legend-name">{item.outcome}</span>
+                                                    <strong>{item.count}</strong><span class="legend-percentage">{item.percentageLabel}</span>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template lwc:else>
+                                    <div class="chart-empty">Select at least one outcome containing Opportunities to display the chart.</div>
+                                </template>
+                            </section>
+
+                            <aside class="summary-panel" aria-labelledby="closed-win-rate-title">
+                                <p class="eyebrow">Primary measure</p>
+                                <h3 id="closed-win-rate-title">Closed Win Rate</h3>
+                                <strong class="rate-value">{result.closedWinRateLabel}</strong>
+                                <p class="rate-caption">Won out of all closed decisions</p>
+                                <dl class="summary-list">
+                                    <div><dt>Entered {result.sourceStage}</dt><dd>{result.totalEntered}</dd></div>
+                                    <div><dt>Closed decisions</dt><dd>{result.totalClosed}</dd></div>
+                                    <div><dt>Still open</dt><dd>{result.totalOpen}</dd></div>
+                                    <div><dt>Same-day Engagement → Lost excluded</dt><dd>{result.rapidLossExcluded}</dd></div>
+                                </dl>
+                                <div class="formula-note">
+                                    <span>Calculation</span>
+                                    <strong>{result.totalConverted} Won ÷ ({result.totalConverted} Won + {result.totalLost} Lost)</strong>
+                                </div>
+                            </aside>
+                        </div>
+
+                        <section class="close-time-panel" aria-labelledby="product-close-time-title">
+                            <div class="section-heading close-time-heading">
+                                <div>
+                                    <p class="eyebrow">Close speed by product line</p>
+                                    <h3 id="product-close-time-title">{comparisonTitle}</h3>
+                                    <p>Created Date to first Closed Won or Closed Lost date. The selected date range must include the years being compared.</p>
+                                </div>
+                                <div class="comparison-controls">
+                                    <lightning-combobox name="comparisonYearA" label="Year A" value={comparisonYearA}
+                                        options={comparisonYearAOptions} onchange={handleComparisonYearChange}>
+                                    </lightning-combobox>
+                                    <lightning-combobox name="comparisonYearB" label="Year B" value={comparisonYearB}
+                                        options={comparisonYearBOptions} onchange={handleComparisonYearChange}>
+                                    </lightning-combobox>
+                                </div>
+                            </div>
+
+                            <template lwc:if={hasProductCloseData}>
+                                <div class="close-time-list">
+                                    <template for:each={productCloseRows} for:item="row">
+                                        <div class="close-time-row" key={row.productName}>
+                                            <strong>{row.productName}</strong>
+                                            <span class="close-year">{comparisonYearA}</span>
+                                            <div class="close-track"><span class="close-bar year-a" style={row.barAStyle}></span></div>
+                                            <span class="close-value">{row.averageALabel}</span>
+                                            <span class="close-year">{comparisonYearB}</span>
+                                            <div class="close-track"><span class="close-bar year-b" style={row.barBStyle}></span></div>
+                                            <span class="close-value">{row.averageBLabel}</span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                            <template lwc:else>
+                                <div class="close-time-empty">{comparisonEmptyMessage}</div>
+                            </template>
+                        </section>
+
+                        <section class={detailsSectionClass} aria-labelledby="opportunity-details-title">
+                            <div class="table-heading">
+                                <div><p class="eyebrow">Drill-down</p><h3 id="opportunity-details-title">{tableTitle}</h3><p>{tableDescription}</p></div>
+                                <div class="table-actions">
+                                    <lightning-badge label={includedBadge}></lightning-badge>
+                                    <lightning-button label={toggleLabel} icon-name={toggleIcon} aria-expanded={isExpanded}
+                                        onclick={handleToggleTable}></lightning-button>
+                                </div>
+                            </div>
+                            <template lwc:if={isExpanded}>
+                                <template lwc:if={hasIncludedOpportunities}>
+                                    <div class="table-wrap">
+                                        <lightning-datatable key-field="opportunityId" data={filteredOpportunities}
+                                            columns={columns} hide-checkbox-column show-row-number-column>
+                                        </lightning-datatable>
+                                    </div>
+                                </template>
+                                <template lwc:else>
+                                    <div class="empty-state"><lightning-icon icon-name="utility:info" size="small"></lightning-icon><span>No Opportunities match the selected outcome filters.</span></div>
+                                </template>
+                            </template>
+                        </section>
+
+                        <footer class="dashboard-note">
+                            Closed Win Rate excludes Open Opportunities. Each Opportunity is counted once, and outcome events must be within the selected dates.
+                        </footer>
+                    </template>
+                </main>
+            </div>
+        </div>
+    </lightning-card>
+</template>

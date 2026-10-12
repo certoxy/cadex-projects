@@ -1,0 +1,166 @@
+<template>
+    <section class="dashboard-shell">
+        <header class="dashboard-header">
+            <div>
+                <p class="eyebrow">OPPORTUNITY ANALYTICS</p>
+                <h1>2025 vs 2026 Performance</h1>
+                <p class="subtitle">Matched YTD conversion, value, products, and close speed</p>
+            </div>
+            <div class="date-controls">
+                <lightning-input type="date" label="Compare through" value={compareThroughDate}
+                    onchange={handleDateChange}></lightning-input>
+                <lightning-button variant="brand" label="Apply" onclick={handleApplyDate}></lightning-button>
+            </div>
+        </header>
+
+        <template if:true={errorMessage}>
+            <div class="error-panel" role="alert">{errorMessage}</div>
+        </template>
+
+        <div class={layoutClass}>
+            <aside class="filter-panel">
+                <div class="filter-heading">
+                    <div><p class="eyebrow">FILTERS</p><h2>Refine results</h2></div>
+                    <lightning-button-icon icon-name="utility:chevronleft" alternative-text="Hide filters"
+                        title="Hide filters" onclick={toggleFilters}></lightning-button-icon>
+                </div>
+
+                <div class="filter-group">
+                    <div class="group-title"><span>Sales Team</span><span><button data-group="salesTeams" onclick={handleSelectAll}>All</button><button data-group="salesTeams" onclick={handleClearAll}>None</button></span></div>
+                    <div class="option-list">
+                        <template for:each={salesTeams} for:item="item">
+                            <lightning-input key={item.value} type="checkbox" label={item.displayLabel}
+                                data-value={item.value} checked={item.checked} onchange={handleTeamChange}></lightning-input>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="group-title"><span>Opportunity Owner</span><span><button data-group="owners" onclick={handleSelectAll}>All</button><button data-group="owners" onclick={handleClearAll}>None</button></span></div>
+                    <div class="option-list tall">
+                        <template for:each={owners} for:item="item">
+                            <lightning-input key={item.value} type="checkbox" label={item.displayLabel}
+                                data-value={item.value} checked={item.checked} onchange={handleOwnerChange}></lightning-input>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="group-title"><span>Products</span><span><button data-group="products" onclick={handleSelectAll}>All</button><button data-group="products" onclick={handleClearAll}>None</button></span></div>
+                    <p class="helper">No Product ({noProductOpportunityCount}) is always included.</p>
+                    <div class="option-list tall">
+                        <template for:each={products} for:item="item">
+                            <lightning-input key={item.value} type="checkbox" label={item.displayLabel}
+                                data-value={item.value} checked={item.checked} onchange={handleProductChange}></lightning-input>
+                        </template>
+                    </div>
+                </div>
+                <lightning-button class="apply-filter" variant="brand" label="Apply Filters"
+                    icon-name="utility:filterList" onclick={handleApplyFilters}></lightning-button>
+            </aside>
+
+            <template if:true={filtersCollapsed}>
+                <button class="show-filters" onclick={toggleFilters} title={filterToggleTitle}>
+                    <lightning-icon icon-name={filterToggleIcon} size="x-small"></lightning-icon><span>Filters</span>
+                </button>
+            </template>
+
+            <main class="dashboard-main">
+                <template if:true={isLoading}>
+                    <lightning-spinner alternative-text="Loading dashboard" size="medium"></lightning-spinner>
+                </template>
+                <template if:true={dashboard}>
+                    <div class="context-row"><span>{dashboard.comparisonLabel}</span><span>Final stage = Closed Won + Closed Lost</span></div>
+                    <template if:true={dashboard.isTruncated}>
+                        <div class="warning-panel">Showing the first 5,000 Opportunities. Narrow the filters for a complete result.</div>
+                    </template>
+
+                    <section class="year-grid">
+                        <article class="year-card year-2025">
+                            <div class="year-heading"><div><p class="eyebrow">COHORT</p><h2>2025</h2></div><div class="hero-number"><span>{year2025.winRateLabel}</span><small>WIN RATE</small></div></div>
+                            <div class="kpi-grid">
+                                <div><span>Created</span><strong>{year2025.createdCount}</strong></div>
+                                <div><span>Closed Won</span><strong>{year2025.wonCount}</strong></div>
+                                <div><span>Closed Lost</span><strong>{year2025.lostCount}</strong></div>
+                                <div><span>Still Open</span><strong>{year2025.openCount}</strong></div>
+                                <div><span>Avg 12mo Deal Value (Amount)</span><strong>{year2025.averageFinalDealValueLabel}</strong></div>
+                                <div><span>Avg Time to Close</span><strong>{year2025.averageDaysToCloseLabel}</strong></div>
+                            </div>
+                            <p class="exclusion">{year2025.rapidLossExcluded} same-day Engagement → Lost excluded</p>
+                        </article>
+                        <article class="year-card year-2026">
+                            <div class="year-heading"><div><p class="eyebrow">COHORT</p><h2>2026</h2></div><div class="hero-number"><span>{year2026.winRateLabel}</span><small>WIN RATE</small></div></div>
+                            <div class="kpi-grid">
+                                <div><span>Created</span><strong>{year2026.createdCount}</strong></div>
+                                <div><span>Closed Won</span><strong>{year2026.wonCount}</strong></div>
+                                <div><span>Closed Lost</span><strong>{year2026.lostCount}</strong></div>
+                                <div><span>Still Open</span><strong>{year2026.openCount}</strong></div>
+                                <div><span>Avg 12mo Deal Value (Amount)</span><strong>{year2026.averageFinalDealValueLabel}</strong></div>
+                                <div><span>Avg Time to Close</span><strong>{year2026.averageDaysToCloseLabel}</strong></div>
+                            </div>
+                            <p class="exclusion">{year2026.rapidLossExcluded} same-day Engagement → Lost excluded</p>
+                        </article>
+                    </section>
+
+                    <section class="content-card stage-card">
+                        <div class="section-heading"><div><p class="eyebrow">CONVERSION BY STAGE</p><h2>How far each created cohort progressed</h2></div><div class="legend"><span class="dot navy"></span>2025 <span class="dot teal"></span>2026</div></div>
+                        <div class="stage-table">
+                            <template for:each={stageRows} for:item="row">
+                                <div class="stage-row" key={row.stageName}>
+                                    <strong>{row.stageName}</strong>
+                                    <div class="bar-track"><span class="bar navy-bar" style={row.bar2025Style}></span></div><span>{row.count2025} · {row.rate2025Label}</span>
+                                    <div class="bar-track"><span class="bar teal-bar" style={row.bar2026Style}></span></div><span>{row.count2026} · {row.rate2026Label}</span>
+                                </div>
+                            </template>
+                        </div>
+                    </section>
+
+                    <section class="content-card product-card">
+                        <div class="section-heading"><div><p class="eyebrow">PRODUCT BREAKDOWN</p><h2>Created Opportunities and final-stage performance</h2></div></div>
+                        <template if:true={hasProducts}>
+                            <div class="table-scroll"><table><thead><tr><th rowspan="2">Product</th><th colspan="2">Created</th><th colspan="2">Avg 12mo Deal Value (Amount)</th><th colspan="2">Avg Time to Close</th></tr><tr><th>2025</th><th>2026</th><th>2025</th><th>2026</th><th>2025</th><th>2026</th></tr></thead>
+                            <tbody><template for:each={productRows} for:item="row"><tr key={row.productName}><th>{row.productName}</th><td>{row.created2025}</td><td>{row.created2026}</td><td>{row.averageDealValue2025Label}</td><td>{row.averageDealValue2026Label}</td><td>{row.averageCloseDays2025Label}</td><td>{row.averageCloseDays2026Label}</td></tr></template></tbody></table></div>
+                        </template>
+                    </section>
+
+                    <section class="content-card close-time-card">
+                        <div class="section-heading">
+                            <div>
+                                <p class="eyebrow">CLOSE SPEED BY PRODUCT LINE</p>
+                                <h2>Average Time to Close</h2>
+                                <p class="section-note">Created Date to the first Closed Won or Closed Lost date. Products without a closed decision show —.</p>
+                            </div>
+                            <div class="legend"><span class="dot navy"></span>2025 <span class="dot teal"></span>2026</div>
+                        </div>
+                        <template if:true={hasProducts}>
+                            <div class="close-time-list">
+                                <template for:each={productRows} for:item="row">
+                                    <div class="close-time-row" key={row.productName}>
+                                        <strong>{row.productName}</strong>
+                                        <span class="year-tag">2025</span>
+                                        <div class="bar-track close-track"><span class="bar navy-bar" style={row.closeDays2025Style}></span></div>
+                                        <span class="days-value">{row.averageCloseDays2025Label}</span>
+                                        <span class="year-tag">2026</span>
+                                        <div class="bar-track close-track"><span class="bar teal-bar" style={row.closeDays2026Style}></span></div>
+                                        <span class="days-value">{row.averageCloseDays2026Label}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </section>
+
+                    <section class="content-card detail-card">
+                        <button class="detail-toggle" onclick={toggleDetails}>
+                            <span><span class="eyebrow">CLOSED WON DETAILS</span><strong>Opportunity records for both cohorts</strong></span>
+                            <span>{detailsLabel}<lightning-icon icon-name={detailsIcon} size="x-small"></lightning-icon></span>
+                        </button>
+                        <template if:true={detailsExpanded}>
+                            <lightning-datatable key-field="opportunityId" data={closedWonRows}
+                                columns={closedWonColumns} hide-checkbox-column></lightning-datatable>
+                        </template>
+                    </section>
+                </template>
+            </main>
+        </div>
+    </section>
+</template>
